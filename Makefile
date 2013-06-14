@@ -10,7 +10,7 @@ EXEC=dust_data_collect_routine
 all: $(EXEC)
 
 $(EXEC): $(OBJS)
-    $(CC) -o $@ $(OBJS)
+	$(CC) -o $@ $(OBJS)
 
 %.o: %.c $(HDRS)
 	$(CC) $(CFLAGS) -o $@ $<
