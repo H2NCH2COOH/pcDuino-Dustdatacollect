@@ -25,32 +25,33 @@ def timer_handler(signum,frame):
     global dust_count
     global dust_low_c
     
-    ++dust_count
-    if(gpio.get_gpio_pin(DUST_PIN)==LOW):
-        ++dust_low_c
+    dust_count+=1
+    if(gpio.get_gpio_pin(DUST_PIN)==gpio.LOW):
+        dust_low_c+=1
     
-    sum=0
     if(dust_count>=DUST_COUNT_MAX):
+        sum=0
+        dc=0
         for i in old_data:
             if(i>=0):
                 sum+=i
-                ++dc;
+                dc+=1
         
         sum+=dust_low_c/dust_count
         old_data.append(dust_low_c/dust_count)
-        old_data.remove(0)
-        
-        p/=(dc+1);
-        p*=100;
-        
-        print("Dust Data: %f%% at %s"%(p,time.ctime()));
+        if(dc>=OLD_DATA_NUMBER):
+            old_data.remove(0)
+        print("Hi~")
+        p=sum/(dc+1)*100
+        print("Hi~")
+        print("Dust Data: %f%% at %s"%(p,time.ctime()))
         
         while(True):
             req=urllib2.Request
             (
-                url="api.xively.com/v2/feeds/%s/datastreams/%s"%(feed_id,channel_id),
-                headers={"X-ApiKey":xapikey},
-                data="{\"id\":\"%s\",\"current_value\":\"%f\"}"%(channel_id,p)
+                "api.xively.com/v2/feeds/%s/datastreams/%s"%(feed_id,channel_id),
+                {"X-ApiKey":xapikey},
+                "{\"id\":\"%s\",\"current_value\":\"%f\"}"%(channel_id,p)
             )
             req.get_method=lambda: 'PUT'
             
@@ -59,8 +60,10 @@ def timer_handler(signum,frame):
             if(result.getcode()==200):
                 break
         
-        dust_count=0;
-        dust_low_c=0;
+        dust_count=0
+        dust_low_c=0
+
+gpio.set_gpio_mode(DUST_PIN,gpio.INPUT)
 
 signal.signal(signal.SIGALRM,timer_handler)
 signal.setitimer(signal.ITIMER_REAL,1,0.001)
