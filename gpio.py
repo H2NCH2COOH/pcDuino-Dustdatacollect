@@ -28,7 +28,7 @@ def get_gpio_pin(pin):
     except IOError as e:
         sys.stderr.write(str(e))
     
-    c=f.read(1)
+    c=f_pin.read(1)
     
     if(c=="0"):
         return LOW;
