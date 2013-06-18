@@ -41,24 +41,27 @@ def timer_handler(signum,frame):
         old_data.append(dust_low_c/dust_count)
         if(dc>=OLD_DATA_NUMBER):
             old_data.remove(0)
-        print("Hi~")
+        
         p=sum/(dc+1)*100
-        print("Hi~")
+        
         print("Dust Data: %f%% at %s"%(p,time.ctime()))
         
-        while(True):
-            req=urllib2.Request
-            (
-                "api.xively.com/v2/feeds/%s/datastreams/%s"%(feed_id,channel_id),
-                {"X-ApiKey":xapikey},
-                "{\"id\":\"%s\",\"current_value\":\"%f\"}"%(channel_id,p)
-            )
-            req.get_method=lambda: 'PUT'
-            
-            result=urllib2.urlopen(req)
-            
-            if(result.getcode()==200):
-                break
+        try:
+            while(True):
+                req=urllib2.Request
+                (
+                    "api.xively.com/v2/feeds/%s/datastreams/%s"%(feed_id,channel_id),
+                    {"X-ApiKey":xapikey},
+                    "{\"id\":\"%s\",\"current_value\":\"%f\"}"%(channel_id,p)
+                )
+                req.get_method=lambda: 'PUT'
+                
+                result=urllib2.urlopen(req)
+                
+                if(result.getcode()==200):
+                    break
+        except Exception as e:
+            print(str(e))
         
         dust_count=0
         dust_low_c=0
