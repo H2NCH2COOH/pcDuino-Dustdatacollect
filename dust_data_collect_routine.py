@@ -23,18 +23,18 @@ xapikey="1K23Oupn3VhdrkY1CqpZ7IkBpTpHLCiqAN6ZcTsSC7NIXSBs"
 
 def send_data(data):
     try:
-        req=urllib2.Request
-        (
-            "api.xively.com/v2/feeds/%s/datastreams/%s"%(feed_id,channel_id),
-            {"X-ApiKey":xapikey},
-            "{\"id\":\"%s\",\"current_value\":\"%f\"}"%(channel_id,data)
-        )
+        url="http://api.xively.com/v2/feeds/%s/datastreams/%s"%(feed_id,channel_id)
+        data="{\"id\":\"%s\",\"current_value\":\"%f\"}"%(channel_id,data)
+        
+        req=urllib2.Request(url,data)
+        req.add_header("X-ApiKey",xapikey)
         req.get_method=lambda: 'PUT'
         
         result=urllib2.urlopen(req)
         
     except Exception as e:
-        print(str(e))
+        print("Exception! "+str(e))
+
 
 def timer_handler(signum,frame):
     global dust_count
@@ -59,12 +59,12 @@ def timer_handler(signum,frame):
         
         p=sum/(dc+1)*100
         
-        print("Dust Data: %f%% at %s"%(p,time.ctime()))
-        
-        threading.Thread(send_data,(p))
-        
         dust_count=0
         dust_low_c=0
+        
+        print("Dust Data: %f%% at %s"%(p,time.ctime()))
+        
+        threading.Thread(target=send_data,args=(p,)).start()
 
 gpio.set_gpio_mode(DUST_PIN,gpio.INPUT)
 
@@ -75,4 +75,5 @@ def nop():
     return
 
 while(True):
-    nop()
+    #nop()
+    signal.pause()
