@@ -1,6 +1,7 @@
 import sys
 import signal
 import time
+import threading
 
 import urllib
 import urllib2
@@ -20,6 +21,20 @@ feed_id="393295424"
 channel_id="test2"
 xapikey="1K23Oupn3VhdrkY1CqpZ7IkBpTpHLCiqAN6ZcTsSC7NIXSBs"
 
+def send_data(data):
+    try:
+        req=urllib2.Request
+        (
+            "api.xively.com/v2/feeds/%s/datastreams/%s"%(feed_id,channel_id),
+            {"X-ApiKey":xapikey},
+            "{\"id\":\"%s\",\"current_value\":\"%f\"}"%(channel_id,data)
+        )
+        req.get_method=lambda: 'PUT'
+        
+        result=urllib2.urlopen(req)
+        
+    except Exception as e:
+        print(str(e))
 
 def timer_handler(signum,frame):
     global dust_count
@@ -46,22 +61,7 @@ def timer_handler(signum,frame):
         
         print("Dust Data: %f%% at %s"%(p,time.ctime()))
         
-        try:
-            while(True):
-                req=urllib2.Request
-                (
-                    "api.xively.com/v2/feeds/%s/datastreams/%s"%(feed_id,channel_id),
-                    {"X-ApiKey":xapikey},
-                    "{\"id\":\"%s\",\"current_value\":\"%f\"}"%(channel_id,p)
-                )
-                req.get_method=lambda: 'PUT'
-                
-                result=urllib2.urlopen(req)
-                
-                if(result.getcode()==200):
-                    break
-        except Exception as e:
-            print(str(e))
+        threading.Thread(send_data,(p))
         
         dust_count=0
         dust_low_c=0
