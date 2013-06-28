@@ -52,7 +52,7 @@ def connect_to_wifi(ssid,key):
     
     if not device_path:
         print "WiFi device not found :("
-        exit(2)
+        return False
     print "WiFi device path: ", device_path
 
     # Connect to the device's Wireless interface and obtain list of access
@@ -81,7 +81,7 @@ def connect_to_wifi(ssid,key):
 
     if not our_ap_path:
         print "AP not found :("
-        exit(2)
+        return False
     print "Our AP: ", our_ap_path
 
     # At this point we have all the data we need. Let's prepare our connection
@@ -128,29 +128,7 @@ def connect_to_wifi(ssid,key):
             break
         time.sleep(0.001)
     print "Connection established!"
-    return
-    
-    #No disconnection needed#
-    print "Sleeping for 5 seconds ..."
-    time.sleep(5)
-    print "Disconnecting ..."
-    
-    # before this point is reached then connection settings will be stored
-    # forever.
-    # Some pre-init cleanup feature should be devised to deal with this problem,
-    # but this is an issue for another topic.
-    manager.DeactivateConnection(connection_path)
-    settings = dbus.Interface(
-        bus.get_object("org.freedesktop.NetworkManager", settings_path),
-        "org.freedesktop.NetworkManager.Settings.Connection")
-    settings.Delete()
-
-    # Disable Wireless (optional step)
-    if not was_wifi_enabled:
-        manager_props.Set("org.freedesktop.NetworkManager", "WirelessEnabled",
-                          False)
-    print "DONE!"
-    exit(0)
+    return True
 
 if __name__=='__main__':
     SSID = "Wendy"

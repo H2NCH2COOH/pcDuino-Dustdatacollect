@@ -44,32 +44,32 @@ key=None
 
 while True:
     conn,addr=s.accept()
-    try:
-        data=conn.recv(2048)
-        if data:
-            if data.startswith("GET / HTTP"):
-                conn.send(PAGE)
-            elif data.startswith("POST / HTTP"):
-                info=data.split("\r\n\r\n")[1]
-                info=info.strip()
-                for i in info.split('&'):
-                    if i.startswith("ssid="):
-                        ssid=i[5:]
-                    elif i.startswith("key="):
-                        key=i[4:]
-                conn.send(
-                    '''
-                    <html>
-                        <h1>WiFi connection set</h1>
-                        Please wait for the device to connect to the wifi
-                    </html>
-                    '''
-                )
-                
-                ssid=urllib.unquote(ssid)
-                key=urllib.unquote(key)
-                print "Connect to WiFi with SSID: %s, and key: %s"%(ssid,key)
-                connect_to_wifi(ssid,key)
-    except Exception as e:
-        conn.close()
+    data=conn.recv(2048)
+    if data:
+        if data.startswith("GET / HTTP"):
+            conn.send(PAGE)
+            conn.close()
+        elif data.startswith("POST / HTTP"):
+            info=data.split("\r\n\r\n")[1]
+            info=info.strip()
+            for i in info.split('&'):
+                if i.startswith("ssid="):
+                    ssid=i[5:]
+                elif i.startswith("key="):
+                    key=i[4:]
+            conn.send(
+                '''
+                <html>
+                    <h1>WiFi connection set</h1>
+                    Please wait for the device to connect to the wifi
+                </html>
+                '''
+            )
+            conn.close()
+            
+            ssid=urllib.unquote(ssid)
+            key=urllib.unquote(key)
+            print "Connect to WiFi with SSID: %s, and key: %s"%(ssid,key)
+            connect_to_wifi(ssid,key)
+
 
