@@ -129,6 +129,7 @@ def connect_to_wifi(ssid,key):
         time.sleep(0.001)
     print "Connection established!"
     return
+    
     #No disconnection needed#
     print "Sleeping for 5 seconds ..."
     time.sleep(5)
