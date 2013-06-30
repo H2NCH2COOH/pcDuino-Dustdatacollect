@@ -30,6 +30,8 @@ def get_gpio_pin(pin):
     
     c=f_pin.read(1)
     
+    f_pin.close()
+    
     if(c=="0"):
         return LOW;
     elif(c=="1"):
