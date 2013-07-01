@@ -14,7 +14,7 @@ def set_gpio_mode(pin,mode):
     try:
         f_mode=open(name,"w")
     except IOError as e:
-        sys.stderr.write(str(e))
+        sys.stderr.write(str(e)+"\n")
     
     f_mode.write(str(mode))
     
@@ -26,7 +26,8 @@ def get_gpio_pin(pin):
     try:
         f_pin=open(name,"r");
     except IOError as e:
-        sys.stderr.write(str(e))
+        sys.stderr.write(str(e)+"\n")
+        return -1
     
     c=f_pin.read(1)
     
@@ -44,7 +45,7 @@ def set_gpio_pin(pin,level):
     try:
         f_pin=open(name,"w")
     except IOError as e:
-        sys.stderr.write(str(e))
+        sys.stderr.write(str(e)+"\n")
     
     f_pin.write(str(level))
     
