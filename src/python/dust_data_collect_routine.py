@@ -66,6 +66,13 @@ def timer_handler(signum,frame):
         
         threading.Thread(target=send_data,args=(p,)).start()
 
+def ctrl_brk_handler(signum,frame):
+    signal.setitimer(signal.ITIMER_REAL,0,0)
+    print("\nExit dust data collect routine")
+    sys.exit(0)
+
+signal.signal(signal.SIGINT,ctrl_brk_handler)
+
 gpio.set_gpio_mode(DUST_PIN,gpio.INPUT)
 
 signal.signal(signal.SIGALRM,timer_handler)
