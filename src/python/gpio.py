@@ -11,15 +11,17 @@ GPIO_PIN_FILE_FORMAT="/sys/devices/virtual/misc/gpio/pin/gpio%d"
 
 def set_gpio_mode(pin,mode):
     name=GPIO_MODE_FILE_FORMAT%pin
+    ret=True
     try:
         f_mode=open(name,"w")
+	    f_mode.write(str(mode))
+    	f_mode.flush()
     except IOError as e:
         sys.stderr.write(str(e)+"\n")
+        ret=False
     
-    f_mode.write(str(mode))
-    
-    f_mode.flush()
     f_mode.close()
+    return ret
 
 def get_gpio_pin(pin):
     name=GPIO_PIN_FILE_FORMAT%pin
@@ -42,12 +44,14 @@ def get_gpio_pin(pin):
 
 def set_gpio_pin(pin,level):
     name=GPIO_PIN_FILE_FORMAT%pin
+    ret=True
     try:
         f_pin=open(name,"w")
+        f_pin.write(str(level))
+        f_pin.flush();
     except IOError as e:
         sys.stderr.write(str(e)+"\n")
+        ret=False
     
-    f_pin.write(str(level))
-    
-    f_pin.flush();
     f_pin.close();
+    return ret
