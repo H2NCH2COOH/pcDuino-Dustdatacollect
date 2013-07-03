@@ -45,28 +45,22 @@ def dbus_signal_handler(data,time):
     global newest_data
     
     newest_data=data
+    print "New data coming in: %f%% at %s"%(data,time)
 
 
 if __name__=="__main__":
     signal.signal(signal.SIGINT,ctrl_brk_handler)
     
     DBusGMainLoop(set_as_default=True)
+    bus=dbus.SessionBus()
+    bus.add_signal_receiver(
+        handler_function=dbus_signal_handler,
+        signal_name="NewDustData",
+        dbus_interface="cn.kaiwenmap.airsniffer.pcDuino.Collector"
+    )
     
     signal.signal(signal.SIGALRM,timer_handler)
     signal.setitimer(signal.ITIMER_REAL,300,300)
     
-    bus=dbus.SessionBus()
-    collector_obj=bus.get_object(
-        "cn.kaiwenmap.airsniffer.pcDuino.Collector",
-        "/cn/kaiwenmap/airsniffer/pcDuino/Collector"
-    )
-    collector_iface=dbus.Interface(
-        collector_obj,
-        "cn.kaiwenmap.airsniffer.pcDuino.Collector"
-    )
-    collector_iface.connect_to_signal(
-        signal_name="NewDustData",
-        handler_function=dbus_signal_handler,
-        dbus_interface="cn.kaiwenmap.airsniffer.pcDuino.Collector"
-    )
-    
+    while True:
+        signal.pause()

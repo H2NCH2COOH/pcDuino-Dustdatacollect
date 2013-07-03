@@ -7,6 +7,7 @@ import urllib
 import urllib2
 
 import dbus
+from dbus import service
 from dbus.mainloop.glib import DBusGMainLoop
 
 import gpio
@@ -37,25 +38,29 @@ class Collector(dbus.service.Object):
 def timer_handler(signum,frame):
     global dust_count
     global dust_low_c
+    global collector_obj
     
     dust_count+=1
-    if(gpio.get_gpio_pin(DUST_PIN)==gpio.LOW):
+    pin=gpio.get_gpio_pin(DUST_PIN)
+    #print pin
+    if(pin==gpio.LOW):
         dust_low_c+=1
     
     if(dust_count>=DUST_COUNT_MAX):
-        sum=0
+        s=0.0
         dc=0
         for i in old_data:
             if(i>=0):
-                sum+=i
+                s+=i
                 dc+=1
         
-        sum+=dust_low_c/dust_count
+        s+=(dust_low_c+0.0)/dust_count
+        
         old_data.append(dust_low_c/dust_count)
         if(dc>=OLD_DATA_NUMBER):
             old_data.remove(0)
         
-        p=sum/(dc+1)*100
+        p=s/(dc+1)*100.0
         
         dust_count=0
         dust_low_c=0
@@ -70,8 +75,6 @@ def ctrl_brk_handler(signum,frame):
     print("\nExit dust data collect routine")
     sys.exit(0)
 
-def nop():
-    return
 
 if __name__=='__main__':
     signal.signal(signal.SIGINT,ctrl_brk_handler)
@@ -85,5 +88,4 @@ if __name__=='__main__':
     signal.setitimer(signal.ITIMER_REAL,1,0.001)
 
     while(True):
-        #nop()
         signal.pause()
