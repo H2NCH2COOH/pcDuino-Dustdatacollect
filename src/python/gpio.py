@@ -14,8 +14,8 @@ def set_gpio_mode(pin,mode):
     ret=True
     try:
         f_mode=open(name,"w")
-	    f_mode.write(str(mode))
-    	f_mode.flush()
+        f_mode.write(str(mode))
+        f_mode.flush()
     except IOError as e:
         sys.stderr.write(str(e)+"\n")
         ret=False
