@@ -6,6 +6,9 @@ import threading
 import urllib
 import urllib2
 
+import dbus
+from dbus.mainloop.glib import DBusGMainLoop
+
 import gpio
 
 DUST_PIN=4
@@ -14,26 +17,21 @@ DUST_COUNT_MAX=30000
 dust_count=0
 dust_low_c=0
 
-OLD_DATA_NUMBER=9
+OLD_DATA_NUMBER=19
 old_data=[]
 
-feed_id="393295424"
-channel_id="test2"
-xapikey="1K23Oupn3VhdrkY1CqpZ7IkBpTpHLCiqAN6ZcTsSC7NIXSBs"
+collector_obj=None
 
-def send_data(data):
-    try:
-        url="http://api.xively.com/v2/feeds/%s/datastreams/%s"%(feed_id,channel_id)
-        data="{\"id\":\"%s\",\"current_value\":\"%f\"}"%(channel_id,data)
-        
-        req=urllib2.Request(url,data)
-        req.add_header("X-ApiKey",xapikey)
-        req.get_method=lambda: 'PUT'
-        
-        result=urllib2.urlopen(req)
-        
-    except Exception as e:
-        print("Exception! "+str(e))
+class Collector(dbus.service.Object):
+    def __init__(self,obj_path):
+        dbus.service.Object.__init__(self,dbus.SessionBus(),obj_path)
+    
+    @dbus.service.signal(
+        dbus_interface="cn.kaiwenmap.airsniffer.pcDuino.Collector",
+        signature="ds"
+    )
+    def NewDustData(self,data,time):
+        "NOP"
 
 
 def timer_handler(signum,frame):
@@ -64,23 +62,28 @@ def timer_handler(signum,frame):
         
         print("Dust Data: %f%% at %s"%(p,time.ctime()))
         
-        threading.Thread(target=send_data,args=(p,)).start()
+        #threading.Thread(target=send_data,args=(p,)).start()
+        collector_obj.NewDustData(p,time.ctime())
 
 def ctrl_brk_handler(signum,frame):
     signal.setitimer(signal.ITIMER_REAL,0,0)
     print("\nExit dust data collect routine")
     sys.exit(0)
 
-signal.signal(signal.SIGINT,ctrl_brk_handler)
-
-gpio.set_gpio_mode(DUST_PIN,gpio.INPUT)
-
-signal.signal(signal.SIGALRM,timer_handler)
-signal.setitimer(signal.ITIMER_REAL,1,0.001)
-
 def nop():
     return
 
-while(True):
-    #nop()
-    signal.pause()
+if __name__=='__main__':
+    signal.signal(signal.SIGINT,ctrl_brk_handler)
+    
+    gpio.set_gpio_mode(DUST_PIN,gpio.INPUT)
+    
+    DBusGMainLoop(set_as_default=True)
+    collector_obj=Collector("/cn/kaiwenmap/airsniffer/pcDuino/Collector")
+
+    signal.signal(signal.SIGALRM,timer_handler)
+    signal.setitimer(signal.ITIMER_REAL,1,0.001)
+
+    while(True):
+        #nop()
+        signal.pause()
