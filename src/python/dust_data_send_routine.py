@@ -7,6 +7,9 @@ import urllib2
 
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
+import gobject
+
+SENDING_INTERVAL=300 #in seconds
 
 newest_data=None
 
@@ -60,7 +63,6 @@ if __name__=="__main__":
     )
     
     signal.signal(signal.SIGALRM,timer_handler)
-    signal.setitimer(signal.ITIMER_REAL,300,300)
+    signal.setitimer(signal.ITIMER_REAL,SENDING_INTERVAL,SENDING_INTERVAL)
     
-    while True:
-        signal.pause()
+    gobject.MainLoop().run()

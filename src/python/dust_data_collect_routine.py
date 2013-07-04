@@ -9,6 +9,7 @@ import urllib2
 import dbus
 from dbus import service
 from dbus.mainloop.glib import DBusGMainLoop
+import gobject
 
 import gpio
 
@@ -38,7 +39,6 @@ class Collector(dbus.service.Object):
 def timer_handler(signum,frame):
     global dust_count
     global dust_low_c
-    global collector_obj
     
     dust_count+=1
     pin=gpio.get_gpio_pin(DUST_PIN)
@@ -49,14 +49,14 @@ def timer_handler(signum,frame):
     if(dust_count>=DUST_COUNT_MAX):
         s=0.0
         dc=0
+        #print old_data
         for i in old_data:
-            if(i>=0):
-                s+=i
-                dc+=1
+            s+=i
+            dc+=1
         
-        s+=(dust_low_c+0.0)/dust_count
+        s+=((dust_low_c+0.0)/dust_count)
         
-        old_data.append(dust_low_c/dust_count)
+        old_data.append((dust_low_c+0.0)/dust_count)
         if(dc>=OLD_DATA_NUMBER):
             old_data.remove(0)
         
@@ -87,5 +87,4 @@ if __name__=='__main__':
     signal.signal(signal.SIGALRM,timer_handler)
     signal.setitimer(signal.ITIMER_REAL,1,0.001)
 
-    while(True):
-        signal.pause()
+    gobject.MainLoop().run()
