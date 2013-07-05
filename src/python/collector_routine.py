@@ -1,7 +1,6 @@
 import sys
 import signal
 import time
-import threading
 
 import urllib
 import urllib2
@@ -24,7 +23,7 @@ old_data=[]
 
 collector_obj=None
 
-loop=None
+mainloop=None
 
 class Collector(dbus.service.Object):
     def __init__(self,obj_path):
@@ -36,6 +35,14 @@ class Collector(dbus.service.Object):
     )
     def NewDustData(self,data,time):
         "NOP"
+    
+    @dbus.service.method(
+        dbus_interface="cn.kaiwenmap.airsniffer.pcDuino.Collector",
+        in_signature="",
+        out_signature=""
+    )
+    def Stop(self):
+        ctrl_brk_handler(None,None)
 
 
 def timer_handler(signum,frame):
@@ -44,14 +51,12 @@ def timer_handler(signum,frame):
     
     dust_count+=1
     pin=gpio.get_gpio_pin(DUST_PIN)
-    #print pin
     if(pin==gpio.LOW):
         dust_low_c+=1
     
     if(dust_count>=DUST_COUNT_MAX):
         s=0.0
         dc=0
-        #print old_data
         for i in old_data:
             s+=i
             dc+=1
@@ -73,11 +78,9 @@ def timer_handler(signum,frame):
         collector_obj.NewDustData(p,time.ctime())
 
 def ctrl_brk_handler(signum,frame):
-    global loop
-    
     signal.setitimer(signal.ITIMER_REAL,0,0)
-    print("\nExit dust data collect routine")
-    loop.quit()
+    print("Exit Collector routine")
+    mainloop.quit()
 
 
 if __name__=='__main__':
@@ -87,10 +90,12 @@ if __name__=='__main__':
     
     DBusGMainLoop(set_as_default=True)
     name=dbus.service.BusName("cn.kaiwenmap.airsniffer.pcDuino.Collector",dbus.SessionBus())
+    mainloop=gobject.MainLoop()
+    
     collector_obj=Collector("/cn/kaiwenmap/airsniffer/pcDuino/Collector")
-
+    
     signal.signal(signal.SIGALRM,timer_handler)
     signal.setitimer(signal.ITIMER_REAL,1,0.001)
-
-    loop=gobject.MainLoop()
-    loop.run()
+    
+    print "Enter Collector routine"
+    mainloop.run()

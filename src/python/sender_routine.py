@@ -10,7 +10,7 @@ from dbus import service
 from dbus.mainloop.glib import DBusGMainLoop
 import gobject
 
-SENDING_INTERVAL=10 #in seconds
+SENDING_INTERVAL=300 #in seconds
 
 newest_data=None
 
@@ -20,7 +20,7 @@ xapikey="1K23Oupn3VhdrkY1CqpZ7IkBpTpHLCiqAN6ZcTsSC7NIXSBs"
 
 sender_obj=None
 
-loop=None
+mainloop=None
 
 class Sender(dbus.service.Object):
     def __init__(self,obj_path):
@@ -33,6 +33,14 @@ class Sender(dbus.service.Object):
     )
     def SendNow(self):
         signal.setitimer(signal.ITIMER_REAL,1,SENDING_INTERVAL)
+    
+    @dbus.service.method(
+        dbus_interface="cn.kaiwenmap.airsniffer.pcDuino.Sender",
+        in_signature="",
+        out_signature=""
+    )
+    def Stop(self):
+        ctrl_brk_handler(None,None)
 
 def send_data(data):
     try:
@@ -58,11 +66,9 @@ def timer_handler(signum,frame):
     #send_data(newest_data)
 
 def ctrl_brk_handler(signum,frame):
-    global loop
-    
     signal.setitimer(signal.ITIMER_REAL,0,0)
-    print("\nExit dust data send routine")
-    loop.quit()
+    print("Exit Sender routine")
+    mainloop.quit()
 
 def dbus_signal_handler(data,time):
     global newest_data
@@ -77,16 +83,18 @@ if __name__=="__main__":
     DBusGMainLoop(set_as_default=True)
     bus=dbus.SessionBus()
     name=dbus.service.BusName("cn.kaiwenmap.airsniffer.pcDuino.Sender",bus)
+    mainloop=gobject.MainLoop()
+    
+    sender_obj=Sender("/cn/kaiwenmap/airsniffer/pcDuino/Sender")
+    
     bus.add_signal_receiver(
         handler_function=dbus_signal_handler,
         signal_name="NewDustData",
         dbus_interface="cn.kaiwenmap.airsniffer.pcDuino.Collector"
     )
     
-    sender_obj=Sender("/cn/kaiwenmap/airsniffer/pcDuino/Sender")
-    
     signal.signal(signal.SIGALRM,timer_handler)
     signal.setitimer(signal.ITIMER_REAL,SENDING_INTERVAL,SENDING_INTERVAL)
     
-    loop=gobject.MainLoop()
-    loop.run()
+    print "Enter Sender routine"
+    mainloop.run()
