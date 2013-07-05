@@ -34,7 +34,7 @@ class Collector(dbus.service.Object):
         signature="ds"
     )
     def NewDustData(self,data,time):
-        "NOP"
+        pass
     
     @dbus.service.method(
         dbus_interface="cn.kaiwenmap.airsniffer.pcDuino.Collector",
@@ -43,6 +43,7 @@ class Collector(dbus.service.Object):
     )
     def Stop(self):
         ctrl_brk_handler(None,None)
+        
 
 
 def timer_handler(signum,frame):
@@ -79,12 +80,19 @@ def timer_handler(signum,frame):
 
 def ctrl_brk_handler(signum,frame):
     signal.setitimer(signal.ITIMER_REAL,0,0)
-    print("Exit Collector routine")
     mainloop.quit()
 
 
 if __name__=='__main__':
-    signal.signal(signal.SIGINT,ctrl_brk_handler)
+    if len(sys.argv)>1:
+        arg=sys.argv[1].lower()
+    else:
+        arg=""
+    
+    if arg=="-i" or arg=="--ignore-sigint":
+        signal.signal(signal.SIGINT,signal.SIG_IGN)
+    else:
+        signal.signal(signal.SIGINT,ctrl_brk_handler)
     
     gpio.set_gpio_mode(DUST_PIN,gpio.INPUT)
     
@@ -99,3 +107,5 @@ if __name__=='__main__':
     
     print "Enter Collector routine"
     mainloop.run()
+    print("Exit Collector routine")
+

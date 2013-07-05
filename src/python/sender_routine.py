@@ -67,7 +67,6 @@ def timer_handler(signum,frame):
 
 def ctrl_brk_handler(signum,frame):
     signal.setitimer(signal.ITIMER_REAL,0,0)
-    print("Exit Sender routine")
     mainloop.quit()
 
 def dbus_signal_handler(data,time):
@@ -78,7 +77,15 @@ def dbus_signal_handler(data,time):
 
 
 if __name__=="__main__":
-    signal.signal(signal.SIGINT,ctrl_brk_handler)
+    if len(sys.argv)>1:
+        arg=sys.argv[1].lower()
+    else:
+        arg=""
+    
+    if arg=="-i" or arg=="--ignore-sigint":
+        signal.signal(signal.SIGINT,signal.SIG_IGN)
+    else:
+        signal.signal(signal.SIGINT,ctrl_brk_handler)
     
     DBusGMainLoop(set_as_default=True)
     bus=dbus.SessionBus()
@@ -98,3 +105,5 @@ if __name__=="__main__":
     
     print "Enter Sender routine"
     mainloop.run()
+    print("Exit Sender routine")
+

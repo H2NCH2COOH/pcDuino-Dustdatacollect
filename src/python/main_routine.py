@@ -15,8 +15,9 @@ import gobject
 mainloop=None
 
 main_obj=None
-collector_obj=None
-sender_obj=None
+
+collector=None
+sender=None
 
 class Main(dbus.service.Object):
     def __init__(self,obj_path):
@@ -31,32 +32,50 @@ class Main(dbus.service.Object):
         ctrl_brk_handler(None,None)
 
 
+class SubRoutine:
+    def __init__(self,name,silence=False,sudo=False):
+        self.name=name
+        self.obj=None
+        self.proc=None
+        
+        argv=[]
+        if sudo:
+            argv.append("sudo")
+        argv.append("python")
+        argv.append(self.name.lower()+"_routine.py")
+        argv.append("-i")
+        
+        out=None
+        if silence:
+            out=open(os.devnull)
+        
+        #print "Opening sub routine: "+routine
+        
+        self.proc=subprocess.Popen(
+            argv,
+            stdout=out,
+            stderr=None,
+            stdin=open(os.devnull)
+        )
+        
+        time.sleep(2)
+        
+        self.obj=dbus.SessionBus().get_object(
+            "cn.kaiwenmap.airsniffer.pcDuino."+self.name,
+            "/cn/kaiwenmap/airsniffer/pcDuino/"+self.name
+        )
+    
+    def stop(self):
+        if self.obj is not None:
+            self.obj.Stop(dbus_interface="cn.kaiwenmap.airsniffer.pcDuino."+self.name)
+        else:
+            self.proc.terminate()
+        self.proc.wait()
+
 def ctrl_brk_handler(signum,frame):
     signal.setitimer(signal.ITIMER_REAL,0,0)
-    print("Exit Main routine")
     mainloop.quit()
 
-def start_routine(routine,silence=False,sudo=False):
-    argv=[]
-    if sudo:
-        argv.append("sudo")
-    argv.append("python")
-    argv.append(routine+"_routine.py")
-    
-    out=None
-    if silence:
-        out=open(os.devnull)
-    
-    print "Opening sub routine: "+routine
-    
-    subp=subprocess.Popen(
-        argv,
-        stdout=out,
-        stderr=None,
-        stdin=open(os.devnull)
-    )
-    
-    return subp
 
 if __name__=="__main__":
     signal.signal(signal.SIGINT,ctrl_brk_handler)
@@ -68,20 +87,14 @@ if __name__=="__main__":
     
     main_obj=Main("/cn/kaiwenmap/airsniffer/pcDuino/Main")
     
-    start_routine("collector")
-    start_routine("sender")
-    
-    time.sleep(5)
-    
-    collector_obj=bus.get_object(
-        "cn.kaiwenmap.airsniffer.pcDuino.Collector",
-        "/cn/kaiwenmap/airsniffer/pcDuino/Collector"
-    )
-    sender_obj=bus.get_object(
-        "cn.kaiwenmap.airsniffer.pcDuino.Sender",
-        "/cn/kaiwenmap/airsniffer/pcDuino/Sender"
-    )
+    collector=SubRoutine("Collector")
+    sender=SubRoutine("Sender")
     
     print "Enter Main routine"
     mainloop.run()
+    
+    collector.stop()
+    sender.stop()
+    
+    print("Exit Main routine")
 
