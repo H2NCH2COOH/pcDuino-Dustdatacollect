@@ -90,7 +90,7 @@ if __name__=="__main__":
     collector=SubRoutine("Collector")
     sender=SubRoutine("Sender")
     
-    print "Enter Main routine"
+    print("Enter Main routine")
     mainloop.run()
     
     collector.stop()

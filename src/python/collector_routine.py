@@ -66,7 +66,7 @@ def timer_handler(signum,frame):
         
         old_data.append((dust_low_c+0.0)/dust_count)
         if(dc>=OLD_DATA_NUMBER):
-            old_data.remove(0)
+            old_data.pop(0)
         
         p=s/(dc+1)*100.0
         
@@ -105,7 +105,7 @@ if __name__=='__main__':
     signal.signal(signal.SIGALRM,timer_handler)
     signal.setitimer(signal.ITIMER_REAL,1,0.001)
     
-    print "Enter Collector routine"
+    print("Enter Collector routine")
     mainloop.run()
     print("Exit Collector routine")
 

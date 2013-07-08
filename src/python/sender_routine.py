@@ -2,8 +2,7 @@ import sys
 import signal
 import time
 
-import urllib
-import urllib2
+import httplib
 
 import dbus
 from dbus import service
@@ -44,26 +43,33 @@ class Sender(dbus.service.Object):
 
 def send_data(data):
     try:
-        url="http://api.xively.com/v2/feeds/%s/datastreams/%s"%(feed_id,channel_id)
-        data="{\"id\":\"%s\",\"current_value\":\"%f\"}"%(channel_id,data)
+        url="/v2/feeds/%s/datastreams/%s"%(feed_id,channel_id)
+        body="{\"id\":\"%s\",\"current_value\":\"%f\"}"%(channel_id,data)
+        header={"X-ApiKey":xapikey}
         
-        req=urllib2.Request(url,data)
-        req.add_header("X-ApiKey",xapikey)
-        req.get_method=lambda: 'PUT'
-        
-        result=urllib2.urlopen(req)
-        
+        while True:
+            conn=httplib.HTTPConnection("api.xively.com")
+            conn.request("PUT",url,body,header)
+            resp=conn.getresponse()
+            conn.close()
+            if resp.status==200:
+                break
     except Exception as e:
-        print("Exception! "+str(e))
+        sys.stderr.write(
+            "-------------------------------------------------------\n"+
+            "Exception in sending data:\n "+
+            str(e)+"\n"+
+            "-------------------------------------------------------\n"
+        )
 
 def timer_handler(signum,frame):
     global newest_data
     
-    #print "Timer!"
     if not newest_data:
         return
     
-    #send_data(newest_data)
+    print "Sending Data: %f"%newest_data
+    send_data(newest_data)
 
 def ctrl_brk_handler(signum,frame):
     signal.setitimer(signal.ITIMER_REAL,0,0)
