@@ -2,9 +2,6 @@ import sys
 import signal
 import time
 
-import urllib
-import urllib2
-
 import dbus
 from dbus import service
 from dbus.mainloop.glib import DBusGMainLoop
@@ -75,7 +72,6 @@ def timer_handler(signum,frame):
         
         print("Dust Data: %f%% at %s"%(p,time.ctime()))
         
-        #threading.Thread(target=send_data,args=(p,)).start()
         collector_obj.NewDustData(p,time.ctime())
 
 def ctrl_brk_handler(signum,frame):
