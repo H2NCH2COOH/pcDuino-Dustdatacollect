@@ -1,5 +1,6 @@
 import sys
 import os
+import stat
 import signal
 import time
 import subprocess
@@ -24,8 +25,7 @@ mainloop=None
 
 main_obj=None
 
-collector=None
-sender=None
+sub_routines={}
 
 class Main(dbus.service.Object):
     def __init__(self,obj_path):
@@ -48,6 +48,30 @@ class Main(dbus.service.Object):
     )
     def Stop(self):
         ctrl_brk_handler(None,None)
+    
+    @dbus.service.method(
+        dbus_interface="cn.kaiwenmap.airsniffer.pcDuino.Main",
+        in_signature="s",
+        out_signature=""
+    )
+    def StartRoutine(self,routine):
+        sr=sub_routines.get(routine,None)
+        if sr is None:
+            sub_routines[routine]=SubRoutine(routine)
+        else:
+            sr.start()
+    
+    @dbus.service.method(
+        dbus_interface="cn.kaiwenmap.airsniffer.pcDuino.Main",
+        in_signature="s",
+        out_signature=""
+    )
+    def StopRoutine(self,routine):
+        if routine in sub_routines:
+            sr=sub_routines[routine]
+            if sr is not None:
+                sr.stop()
+            del sub_routines[routine]
 
 
 class SubRoutine:
@@ -78,12 +102,24 @@ class SubRoutine:
             stdin=open(os.devnull)
         )
         
-        time.sleep(2)
+        self.obj=None
+        for times in range(5):
+            time.sleep(0.5)
+            try:
+                self.obj=dbus.SessionBus().get_object(
+                    "cn.kaiwenmap.airsniffer.pcDuino."+self.name,
+                    "/cn/kaiwenmap/airsniffer/pcDuino/"+self.name
+                )
+            except Exception as e:
+                self.obj=None
+        if self.obj is None:
+            sys.stderr.write(
+                "Error creating sub routine: "+self.name+"\n"
+            )
+            self.stop()
+            return False
         
-        self.obj=dbus.SessionBus().get_object(
-            "cn.kaiwenmap.airsniffer.pcDuino."+self.name,
-            "/cn/kaiwenmap/airsniffer/pcDuino/"+self.name
-        )
+        return True
     
     def stop(self):
         if (self.proc is not None) and (not self.proc.poll()):
@@ -95,7 +131,7 @@ class SubRoutine:
         
         self.proc=None
         self.obj=None
-            
+
 
 def read_device_id():
     global device_id
@@ -142,7 +178,10 @@ def check_config():
     elif action=="script":
         if "script" in data:
             script=data["script"]
-            #TODO: run script
+            with open("temp_script","w") as sf:
+                sf.write(script)
+            subprocess.call(["chmod","+x","temp_script"])
+            subprocess.call(["temp_script"])
         else:
             return
     else:
@@ -166,8 +205,8 @@ if __name__=="__main__":
     
     main_obj=Main("/cn/kaiwenmap/airsniffer/pcDuino/Main")
     
-    collector=SubRoutine("Collector")
-    sender=SubRoutine("Sender")
+    main_obj.StartRoutine("Collector")
+    main_obj.StartRoutine("Sender")
     
     signal.signal(signal.SIGALRM,timer_handler)
     signal.setitimer(signal.ITIMER_REAL,CHECK_CONFIG_INTERVAL,CHECK_CONFIG_INTERVAL)
@@ -175,8 +214,8 @@ if __name__=="__main__":
     print("Enter Main routine")
     mainloop.run()
     
-    collector.stop()
-    sender.stop()
+    for key in sub_routines:
+        sub_routines[key].stop()
     
     print("Exit Main routine")
 
