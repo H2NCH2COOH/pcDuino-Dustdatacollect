@@ -1,4 +1,3 @@
-import urllib
 import httplib
 
 import json
@@ -6,6 +5,8 @@ import json
 from main_routine import device_id
 from main_routine import sub_routines
 from main_routine import SubRoutine
+
+import update
 
 CONFIG_SERVER="kaiwenmap.cn"
 CONFIG_URL="/setting/%s"
@@ -19,7 +20,7 @@ def check():
     if resp.status!=200:
         return
     
-    config=json.loads(urllib.unquote(resp.read()))
+    config=json.loads(resp.read())
     action=config.get("action","nothing").lower()
     data=config.get("data",{})
     
@@ -34,7 +35,7 @@ def do_config(action,data):
         #TODO: do anything else
     #=========================================================================#
     elif action=="update":
-        pass #TODO: start update routine
+        update.update()
     #=========================================================================#
     elif action=="script":
         if "script" in data:

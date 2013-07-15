@@ -76,19 +76,19 @@ class Main(dbus.service.Object):
 
 class SubRoutine:
     def __init__(self,name,silent=True):
-        #FIXME: implement silent
-        
         self.name=name
         self.obj=None
         self.proc=None
-        self.silence=silence
+        self.silent=silent
         
         self.start()
     
     def start(self):
+        #FIXME: implement silent
+        
         argv=[]
         argv.append("python")
-        argv.append(self.name.lower()+"_routine.py")
+        argv.append(os.getcwd()+"/"+self.name+"/"+self.name.lower()+"_routine.py")
         argv.append("-i")
         
         #print "Opening sub routine: "+routine
@@ -97,7 +97,8 @@ class SubRoutine:
             argv,
             stdout=None,
             stderr=None,
-            stdin=open(os.devnull)
+            stdin=open(os.devnull),
+            cwd=os.getcwd()+"/"+self.name+"/"
         )
         
         self.obj=None
