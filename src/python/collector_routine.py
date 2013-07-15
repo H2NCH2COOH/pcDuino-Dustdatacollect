@@ -3,7 +3,7 @@ import signal
 import time
 
 import dbus
-from dbus import service
+import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
 import gobject
 

@@ -5,13 +5,16 @@ import time
 import httplib
 
 import dbus
-from dbus import service
+import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
 import gobject
 
 SENDING_INTERVAL=300 #in seconds
 
 newest_data=None
+
+coeff_mult=1.0
+coeff_add=0.0
 
 feed_id="393295424"
 channel_id="test2"
@@ -40,8 +43,21 @@ class Sender(dbus.service.Object):
     )
     def Stop(self):
         ctrl_brk_handler(None,None)
+    
+    @dbus.service.method(
+        dbus_interface="cn.kaiwenmap.airsniffer.pcDuino.Sender",
+        in_signature="dd",
+        out_signature=""
+    )
+    def Calibrate(self,mult_by,add_by):
+        coeff_mult*=mult_by
+        coeff_add*=mult_by
+        coeff_add+=add_by
 
 def send_data(data):
+    data*=coeff_mult
+    data+=coeff_add
+    
     try:
         url="/v2/feeds/%s/datastreams/%s"%(feed_id,channel_id)
         body="{\"id\":\"%s\",\"current_value\":\"%f\"}"%(channel_id,data)

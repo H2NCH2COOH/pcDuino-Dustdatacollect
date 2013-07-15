@@ -11,13 +11,13 @@ import httplib
 import json
 
 import dbus
-from dbus import service
+import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
 import gobject
 
+import remote_config
+
 CHECK_CONFIG_INTERVAL=300 #in seconds
-CONFIG_SERVER="kaiwenmap.cn"
-CONFIG_URL="/setting/%s"
 
 device_id=None
 
@@ -75,7 +75,9 @@ class Main(dbus.service.Object):
 
 
 class SubRoutine:
-    def __init__(self,name,silence=False):
+    def __init__(self,name,silent=True):
+        #FIXME: implement silent
+        
         self.name=name
         self.obj=None
         self.proc=None
@@ -89,15 +91,11 @@ class SubRoutine:
         argv.append(self.name.lower()+"_routine.py")
         argv.append("-i")
         
-        out=None
-        if self.silence:
-            out=open(os.devnull)
-        
         #print "Opening sub routine: "+routine
         
         self.proc=subprocess.Popen(
             argv,
-            stdout=out,
+            stdout=None,
             stderr=None,
             stdin=open(os.devnull)
         )
@@ -124,13 +122,16 @@ class SubRoutine:
     def stop(self):
         if (self.proc is not None) and (not self.proc.poll()):
             if self.obj is not None:
-                self.obj.Stop(dbus_interface="cn.kaiwenmap.airsniffer.pcDuino."+self.name)
+                self.getInterface().Stop()
             else:
                 self.proc.terminate()
             self.proc.wait()
         
         self.proc=None
         self.obj=None
+    
+    def getInterface(self):
+        return dbus.Interface(self.obj,"cn.kaiwenmap.airsniffer.pcDuino."+self.name)
 
 
 def read_device_id():
@@ -155,37 +156,8 @@ def ctrl_brk_handler(signum,frame):
 
 def timer_handler(signum,frame):
     print("Check for config")
-
-def check_config():
-    conn=httplib.HTTPConnection(CONFIG_SERVER)
-    conn.request("GET",CONFIG_URL%device_id)
-    resp=conn.getresponse()
-    conn.close()
-    
-    if resp.status!=200:
-        return
-    
-    config=json.loads(resp.read())
-    action=config.get("action","nothing")
-    data=config.get("data",{})
-    
-    if action=="reboot":
-        #TODO: reboot
-        pass
-    elif action=="update":
-        #TODO: update
-        pass
-    elif action=="script":
-        if "script" in data:
-            script=data["script"]
-            with open("temp_script","w") as sf:
-                sf.write(script)
-            subprocess.call(["chmod","+x","temp_script"])
-            subprocess.call(["temp_script"])
-        else:
-            return
-    else:
-        return
+    reload(remote_config)
+    remote_config.check()
 
 
 if __name__=="__main__":
@@ -207,6 +179,7 @@ if __name__=="__main__":
     
     main_obj.StartRoutine("Collector")
     main_obj.StartRoutine("Sender")
+    main_obj.StartRoutine("WiFiSetUpHelper")
     
     signal.signal(signal.SIGALRM,timer_handler)
     signal.setitimer(signal.ITIMER_REAL,CHECK_CONFIG_INTERVAL,CHECK_CONFIG_INTERVAL)
