@@ -4,6 +4,8 @@ import time
 
 import httplib
 
+import json
+
 import dbus
 import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
@@ -12,6 +14,8 @@ import gobject
 SENDING_INTERVAL=300 #in seconds
 
 newest_data=None
+
+COEFFS_FILE="coeffs.txt"
 
 coeff_mult=1.0
 coeff_add=0.0
@@ -97,6 +101,28 @@ def dbus_signal_handler(data,time):
     newest_data=data
     print "New data coming in: %f%% at %s"%(data,time)
 
+def load_coeffs():
+    global coeff_mult
+    global coeff_add
+    
+    with open(COEFFS_FILE,"r") as cf:
+        coeffs=json.load(cf)
+        if "coeff_mult" in coeffs:
+            coeff_mult=coeffs["coeff_mult"]
+        if "coeff_add" in coeffs:
+            coeff_add=coeffs["coeff_add"]
+        
+
+def save_coeffs():
+    with open(COEFFS_FILE,"w") as cf:
+        json.dump(
+            {
+                "coeff_mult":coeff_mult,
+                "coeff_add":coeff_add
+            },
+            cf
+        )
+
 
 if __name__=="__main__":
     if len(sys.argv)>1:
@@ -125,7 +151,12 @@ if __name__=="__main__":
     signal.signal(signal.SIGALRM,timer_handler)
     signal.setitimer(signal.ITIMER_REAL,SENDING_INTERVAL,SENDING_INTERVAL)
     
-    print "Enter Sender routine"
+    load_coeffs()
+    print("\tSender: coeff_mult=%f, coeff_add=%f"%(coeff_mult,coeff_add))
+    
+    print("Enter Sender routine")
     mainloop.run()
+    
+    save_coeffs()
     print("Exit Sender routine")
 

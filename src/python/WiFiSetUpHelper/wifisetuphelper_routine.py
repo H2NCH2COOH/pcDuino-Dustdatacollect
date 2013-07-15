@@ -50,7 +50,7 @@ if __name__=="__main__":
     
     service=subprocess.Popen(["sudo","python","wifi_set_up_service.py"])
     
-    print "Enter WiFiSetUpHelper routine"
+    print("Enter WiFiSetUpHelper routine")
     mainloop.run()
     
     service.send_signal(signal.SIGINT)
