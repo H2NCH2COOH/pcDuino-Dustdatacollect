@@ -42,10 +42,11 @@ def do_config(action,data):
             script=data["script"]
             with open("temp_script","w") as tsf:
                 tsf.write(script)
+                tsf.close()
                 subprocess.call(["chmod","+x","temp_script"])
                 subprocess.call(["temp_script"])
         else:
-            return
+            pass
     #=========================================================================#
     elif action=="calibrate":
         if "Sender" in sub_routines:
@@ -54,4 +55,4 @@ def do_config(action,data):
             sub_routines["Sender"].getInterface().Calibrate(mult,add)
     #=========================================================================#
     else:
-        return
+        pass
